@@ -1,2 +1,153 @@
-# dataproducts
-this is part of the data products development class as part of the data science specialization.
+emi-calculator-presentation
+========================================================
+author: Brahmeswara R Yerrabolu
+date: 25-May-2015
+
+EMI & Amortization schedule Calculator
+========================================================
+
+This is small web application to calcualte the loan monthly payments for a given values of
+
+- Loan Amount
+- Interest Rate
+- Loan tenure in months
+
+Once the values are entered, clink in "Calculate EMI" button to display
+
+- monthly payment amount
+- Amortizations schedule
+
+Shiny Application - ui.R Code
+========================================================
+The below is the ui.R code of the shiny application.
+
+```r
+library(shiny)
+
+# Define UI for dataset viewer application
+shinyUI(fluidPage(
+  
+  # Application title.
+  titlePanel("EMI Calculator"),
+ 
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Note: Please enter loan amount, tenure of the loan in months and interest rate and then press the Calcualate EMI button."),
+      numericInput("amount", "Loan Amount:", 10),
+      numericInput("tenure", "Loan Duration (in months):", 10),
+      numericInput("interest", "Inerest Rate:", 10),
+      actionButton("submit", "Calculate EMI")
+    ),
+    
+    # Show a summary of the dataset and an HTML table with the
+    # requested number of observations. Note the use of the h4
+    # function to provide an additional header above each output
+    # section.
+    mainPanel(
+      h4("Monthly EMI is "),
+      verbatimTextOutput("monthlyEMI"),
+      
+      h4("Amortization Schedule"),
+      tableOutput("view")
+    )
+  )
+))
+```
+
+<!--html_preserve--><div class="container-fluid">
+<h2>EMI Calculator</h2>
+<div class="row">
+<div class="col-sm-4">
+<form class="well">
+<span class="help-block">Note: Please enter loan amount, tenure of the loan in months and interest rate and then press the Calcualate EMI button.</span>
+<div class="form-group shiny-input-container">
+<label for="amount">Loan Amount:</label>
+<input id="amount" type="number" class="form-control" value="10"/>
+</div>
+<div class="form-group shiny-input-container">
+<label for="tenure">Loan Duration (in months):</label>
+<input id="tenure" type="number" class="form-control" value="10"/>
+</div>
+<div class="form-group shiny-input-container">
+<label for="interest">Inerest Rate:</label>
+<input id="interest" type="number" class="form-control" value="10"/>
+</div>
+<button id="submit" type="button" class="btn btn-default action-button">Calculate EMI</button>
+</form>
+</div>
+<div class="col-sm-8">
+<h4>Monthly EMI is </h4>
+<pre id="monthlyEMI" class="shiny-text-output"></pre>
+<h4>Amortization Schedule</h4>
+<div id="view" class="shiny-html-output"></div>
+</div>
+</div>
+</div><!--/html_preserve-->
+
+Shiny Application - Server.R code
+========================================================
+The below is the Server.R code of the shiny application.
+
+```r
+library(shiny)
+library(datasets)
+dt <- data.frame()
+
+shinyServer(function(input, output) {
+  
+ 
+ 
+ # EMI = [P x R x (1+R)^N]/[(1+R)^N-1]
+ # P - principle 
+ # R - Interest per month. if year year/(12*100)
+ # N - number of monthly installements
+  monthlyEMI <- eventReactive(input$submit, {
+        p <- input$amount
+  	    r <- input$interest
+  	    n <- input$tenure
+  	    r <- r/(12*100)
+  	    emin <- (p*r*(1+r)^n)
+  	    emid <- (((1+r)^n)-1)
+  	    emi  <- emin/emid
+  	    
+	    tp <- n * emi
+	    ti <- (tp - p)
+	    balance <- tp
+	    dt <- data.frame();
+	    # num of months
+	    nofm <- n+1 
+
+	     for ( i in 1:nofm )
+	     {
+		mi <- (balance * r)
+		mp <- (emi - mi)
+		dt <- rbind(dt, c(i,emi,round(mp),round(mi),round(balance)))
+		balance <- balance - emi
+	     }
+	     names(dt) <- c("Payment", "Monthly EMI", "Principle", "Interest", "Balance")
+  	    
+  	    output$view <- renderTable({dt})
+  	    round(emi)
+  })
+  
+  output$monthlyEMI <- renderText({
+  	    monthlyEMI()
+  })
+  
+ 
+  
+  # Show the first "n" observations
+  output$view <- renderTable({
+	     dt
+  })
+})
+```
+
+UI
+========================================================
+Please refer to the below URL to play wtih the web application.
+
+https://brahmeswara.shinyapps.io/emi-calculator/
+
+There is error validation of the user entered values implemented in this verion.
+
